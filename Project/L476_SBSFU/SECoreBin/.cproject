@@ -46,7 +46,7 @@
 									<listOptionValue builtIn="false" value="../Application/Core/Inc"/>
 									<listOptionValue builtIn="false" value="../../BFU/Application/BFU/App"/>
 									<listOptionValue builtIn="false" value="../../BFU/Application/BFU/Target"/>
-									<listOptionValue builtIn="false" value="../../Linker_Common/STM32CubeIDE"/>
+									<listOptionValue builtIn="false" value="../../Common/Linker"/>
 									<listOptionValue builtIn="false" value="../../../SBSFU_LIB_V2.7.0/Drivers/CMSIS/Include"/>
 									<listOptionValue builtIn="false" value="../../../SBSFU_LIB_V2.7.0/Drivers/CMSIS/Device/ST/STM32L4xx/Include"/>
 									<listOptionValue builtIn="false" value="../../../SBSFU_LIB_V2.7.0/Drivers/STM32L4xx_HAL_Driver/Inc"/>

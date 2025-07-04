@@ -26,6 +26,11 @@
 	</natures>
 	<linkedResources>
 		<link>
+			<name>Startup/se_key.s</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/Common/Startup/se_key.s</locationURI>
+		</link>
+		<link>
 			<name>Startup/se_stack_smuggler_GNU.s</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/SBSFU_LIB_V2.7.0/Middlewares/ST/STM32_Secure_Engine/Core/se_stack_smuggler_GNU.s</locationURI>

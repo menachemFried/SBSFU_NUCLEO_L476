@@ -69,9 +69,8 @@ extern "C" {
   *                           Decrypt Firmware image using AES128-GCM algo.
   *                           Firmware Image Integrity using AES128-GCM tag.
   */
-// #define SECBOOT_CRYPTO_SCHEME SECBOOT_ECCDSA_WITHOUT_ENCRYPT_SHA256        /*!< Selected Crypto Scheme */
-// #define SECBOOT_CRYPTO_SCHEME SECBOOT_ECCDSA_WITH_AES128_CBC_SHA256        /*!< Selected Crypto Scheme */
-#define SECBOOT_CRYPTO_SCHEME SECBOOT_AES128_GCM_AES128_GCM_AES128_GCM     /*!< Selected Crypto Scheme */
+
+#define SECBOOT_CRYPTO_SCHEME SECBOOT_ECCDSA_WITH_AES128_CBC_SHA256        /*!< Selected Crypto Scheme */
 
 #define SECBOOT_ECCDSA_WITHOUT_ENCRYPT_SHA256        (1U) /*!< asymmetric crypto, no FW encryption           */
 #define SECBOOT_ECCDSA_WITH_AES128_CBC_SHA256        (2U) /*!< asymmetric crypto with encrypted Firmware     */

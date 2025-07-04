@@ -47,7 +47,6 @@ verbose_msg() {
 }
 
 # --- 3. SCRIPT BODY ---
-
 verbose_msg $LINENO "--- Post-Build Script Started ---"
 
 # --- STEP A: VALIDATION AND INITIAL VARIABLE ASSIGNMENT ---
@@ -217,12 +216,6 @@ PREPARE_IMAGE_SCRIPT="\"${KEYS_AND_IMAGES_DIR_ABS}/prepareimage.py\""
 
 
 # test if window executable usable
-prepareimage="$keyUtil_dir"/win/prepareimage/prepareimage.exe
-uname | grep -i -e windows -e mingw >/dev/null > /dev/null 2>&1
-if [ $? -eq 0 ] && [  -e "$prepareimage" ]; then
-  echo "prepareimage with windows executable"
-  export PATH=$keyUtil_dir"\win\prepareimage";$PATH > /dev/null 2>&1
-fi
 
 
 if uname | grep -i -e windows -e mingw >/dev/null 2>&1 && [ -f "${KEYS_AND_IMAGES_DIR_ABS}/win/prepareimage/prepareimage.exe" ]; then
@@ -270,7 +263,7 @@ if [ $ret -eq 0 ]; then
   verbose_msg $LINENO "2. Signing binary..."
   command="\"$PREPARE_IMAGE_CMD\"\"$PREPARE_IMAGE_SCRIPT\" sign -k \"$OEM_KEY_UNIX\" -n \"$NONCE_UNIX\" \"$BIN_FILE_UNIX\" \"$SIGN_FILE_UNIX\""
   log_msg $LINENO "EXECUTING: $command"
-  eval "$command"
+  "$PREPARE_IMAGE_CMD""$PREPARE_IMAGE_SCRIPT" sign -k "$OEM_KEY_UNIX" -n "$NONCE_UNIX" "$BIN_FILE_UNIX" "$SIGN_FILE_UNIX" > "$PROJECT_DIR_ABS"/output.txt
   ret=$?
     if [ $ret -eq 0 ]; then
       verbose_msg $LINENO "3. Packing SFB file..."
@@ -318,7 +311,7 @@ if [ $ret -eq 0 ]; then
                 verbose_msg $LINENO "6b. Encrypting partial binary..."
                 command="\"$PREPARE_IMAGE_CMD\"\"$PREPARE_IMAGE_SCRIPT\" enc -k \"$OEM_KEY_UNIX\" -n \"$NONCE_UNIX\" \"$PARTIAL_BIN_UNIX\" \"$PARTIAL_SFU_UNIX\""
                 log_msg $LINENO "EXECUTING: $command"
-                eval "$command" >> "$PROJECT_DIR_ABS"/output.txt
+                "$PREPARE_IMAGE_CMD""$PREPARE_IMAGE_SCRIPT" enc -k "$OEM_KEY_UNIX" -n "$NONCE_UNIX" "$PARTIAL_BIN_UNIX" "$PARTIAL_SFU_UNIX" >> "$PROJECT_DIR_ABS"/output.txt
                 ret=$?
                 if [ $ret -eq 0 ]; then
                   verbose_msg $LINENO "6c. Signing partial binary..."

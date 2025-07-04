@@ -42,7 +42,7 @@
 									<listOptionValue builtIn="false" value="../Application/BFU/App"/>
 									<listOptionValue builtIn="false" value="../Application/BFU/Target"/>
 									<listOptionValue builtIn="false" value="../../SECoreBin/Application/Core/Inc"/>
-									<listOptionValue builtIn="false" value="../../Linker_Common/STM32CubeIDE"/>
+									<listOptionValue builtIn="false" value="../../Common/Linker"/>
 									<listOptionValue builtIn="false" value="../../../SBSFU_LIB_V2.7.0/Drivers/BSP/STM32L4xx_Nucleo"/>
 									<listOptionValue builtIn="false" value="../../../SBSFU_LIB_V2.7.0/Drivers/BSP/Components/Common"/>
 									<listOptionValue builtIn="false" value="../../../SBSFU_LIB_V2.7.0/Drivers/CMSIS/Include"/>

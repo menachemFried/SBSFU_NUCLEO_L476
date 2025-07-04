@@ -159,7 +159,6 @@ else
   fi
 fi
 
-
 echo "$cmd $prepareimage" >> "$output_dir"/output.txt
 crypto_h="$project_dir"/Application/Core/Inc/se_crypto_config.h
 

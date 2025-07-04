@@ -108,7 +108,7 @@
 		<link>
 			<name>Middlewares/STM32_Secure_Engine/se_interface_application.o</name>
 			<type>1</type>
-			<location>K:/SBSFU_NUCLEO_L476/Project/L476_SBSFU/Common/Debug/Middlewares/STM32_Secure_Engine/se_interface_application.o</location>
+			<locationURI>PARENT-2-PROJECT_LOC/L476_SBSFU/Common/Debug/Middlewares/STM32_Secure_Engine/se_interface_application.o</locationURI>
 		</link>
 		<link>
 			<name>Drivers/BSP/STM32L4xx_Nucleo/stm32l4xx_nucleo.c</name>

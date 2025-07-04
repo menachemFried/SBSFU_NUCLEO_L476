@@ -7,6 +7,14 @@
 # corrected template. It implements the full logic flow without any
 # placeholders or shortcuts.
 #
+# Arguments:
+#   $1: Build directory (e.g., ./Debug)
+#   $2: ELF file name (e.g., UserApp.elf) - Used as is, not as a path.
+#   $3: Binary file path (e.g., ./UserApp/UserApp.bin)
+#   $4: Firmware ID (e.g., 1)
+#   $5: Firmware Version (e.g., 1.2.0)
+#   $6: (Optional) Any value to trigger the final merged ELF generation
+#
 # ==============================================================================
 
 # --- 1. SCRIPT CONFIGURATION ---
@@ -60,6 +68,7 @@ BIGBINARY_ABS="${BINARY_OUTPUT_DIR_ABS}/SBSFU_${EXEC_NAME}.bin"
 MAGIC="SFU${FW_ID}"
 OFFSET=512
 ALIGNMENT=16
+# Key difference for this script version
 SIGN_KEY_ABS="${COMMON_ABS_DIR}/Binary_Keys/ECCKEY${FW_ID}.txt"
 PARTIAL_BIN_ABS="${BINARY_OUTPUT_DIR_ABS}/Partial${EXEC_NAME}.bin"
 PARTIAL_SIGN_ABS="${BINARY_OUTPUT_DIR_ABS}/Partial${EXEC_NAME}.sign"
@@ -72,74 +81,88 @@ PREPARE_IMAGE_CMD="python"
 PREPARE_IMAGE_SCRIPT="${KEYS_AND_IMAGES_DIR_ABS}/prepareimage.py"
 if uname | grep -i -e windows -e mingw >/dev/null 2>&1 && [ -f "${KEYS_AND_IMAGES_DIR_ABS}/win/prepareimage/prepareimage.exe" ]; then
     verbose_msg $LINENO "Windows environment detected. Using prepareimage.exe"
-    PREPARE_IMAGE_CMD="${KEYS_AND_IMAGES_DIR_ABS}/win/prepareimage/prepareimage.exe"
+    PREPARE_IMAGE_CMD="\"${KEYS_AND_IMAGES_DIR_ABS}/win/prepareimage/prepareimage.exe\""
     PREPARE_IMAGE_SCRIPT=""
 else
     verbose_msg $LINENO "Linux/macOS or no .exe found. Using python script."
+    PREPARE_IMAGE_SCRIPT="\"$PREPARE_IMAGE_SCRIPT\""
 fi
 
 # --- STEP F: MAIN EXECUTION FLOW (with nested ifs) ---
 mkdir -p "$BINARY_OUTPUT_DIR_ABS"
 ret=$?
 if [ $ret -eq 0 ]; then
-  # Convert all paths to UNIX format
+  # Convert all paths to UNIX format and log them
+  verbose_msg $LINENO "Converting paths to UNIX format for the tool..."
   BIN_FILE_UNIX=$(echo "$BIN_FILE_ABS" | sed 's/\\/\//g')
+  log_msg $LINENO "UNIX-formatted BIN File: \"$BIN_FILE_UNIX\""
   SIGN_FILE_UNIX=$(echo "$SIGN_FILE_ABS" | sed 's/\\/\//g')
+  log_msg $LINENO "UNIX-formatted SIGN File: \"$SIGN_FILE_UNIX\""
   SIGN_KEY_UNIX=$(echo "$SIGN_KEY_ABS" | sed 's/\\/\//g')
+  log_msg $LINENO "UNIX-formatted SIGN Key File: \"$SIGN_KEY_UNIX\""
   SFB_FILE_UNIX=$(echo "$SFB_FILE_ABS" | sed 's/\\/\//g')
+  log_msg $LINENO "UNIX-formatted SFB File: \"$SFB_FILE_UNIX\""
   HEADER_BIN_UNIX=$(echo "$HEADER_BIN_ABS" | sed 's/\\/\//g')
+  log_msg $LINENO "UNIX-formatted Header BIN File: \"$HEADER_BIN_UNIX\""
   BIGBINARY_UNIX=$(echo "$BIGBINARY_ABS" | sed 's/\\/\//g')
+  log_msg $LINENO "UNIX-formatted Big Binary File: \"$BIGBINARY_UNIX\""
   SBSFU_ELF_UNIX=$(echo "$SBSFU_ELF_ABS" | sed 's/\\/\//g')
+  log_msg $LINENO "UNIX-formatted SBSFU ELF File: \"$SBSFU_ELF_UNIX\""
 
   verbose_msg $LINENO "1. Signing binary with ECCDSA..."
-  command="\"$PREPARE_IMAGE_CMD\" \"$PREPARE_IMAGE_SCRIPT\" sign -k \"$SIGN_KEY_UNIX\" \"$BIN_FILE_UNIX\" \"$SIGN_FILE_UNIX\""
+  command="$PREPARE_IMAGE_CMD $PREPARE_IMAGE_SCRIPT sign -k \"$SIGN_KEY_UNIX\" \"$BIN_FILE_UNIX\" \"$SIGN_FILE_UNIX\""
   log_msg $LINENO "EXECUTING: $command"
-  "$PREPARE_IMAGE_CMD" "$PREPARE_IMAGE_SCRIPT" sign -k "$SIGN_KEY_UNIX" "$BIN_FILE_UNIX" "$SIGN_FILE_UNIX" > "$PROJECT_DIR_ABS"/output.txt
+  $PREPARE_IMAGE_CMD $PREPARE_IMAGE_SCRIPT sign -k "$SIGN_KEY_UNIX" "$BIN_FILE_UNIX" "$SIGN_FILE_UNIX" > "$PROJECT_DIR_ABS"/output.txt
   ret=$?
   if [ $ret -eq 0 ]; then
     verbose_msg $LINENO "2. Packing SFB file..."
-    command="\"$PREPARE_IMAGE_CMD\" \"$PREPARE_IMAGE_SCRIPT\" pack -m \"$MAGIC\" -s \"$SIGN_KEY_UNIX\" -r 112 -v \"$VERSION\" -f \"$BIN_FILE_UNIX\" -t \"$SIGN_FILE_UNIX\" \"$SFB_FILE_UNIX\" -o \"$OFFSET\""
+    command="$PREPARE_IMAGE_CMD $PREPARE_IMAGE_SCRIPT pack -m \"$MAGIC\" -s \"$SIGN_KEY_UNIX\" -r 112 -v \"$VERSION\" -f \"$BIN_FILE_UNIX\" -t \"$SIGN_FILE_UNIX\" \"$SFB_FILE_UNIX\" -o \"$OFFSET\""
     log_msg $LINENO "EXECUTING: $command"
-    "$PREPARE_IMAGE_CMD" "$PREPARE_IMAGE_SCRIPT" pack -m "$MAGIC" -s "$SIGN_KEY_UNIX" -r 112 -v "$VERSION" -f "$BIN_FILE_UNIX" -t "$SIGN_FILE_UNIX" "$SFB_FILE_UNIX" -o "$OFFSET" >> "$PROJECT_DIR_ABS"/output.txt
+    $PREPARE_IMAGE_CMD $PREPARE_IMAGE_SCRIPT pack -m "$MAGIC" -s "$SIGN_KEY_UNIX" -r 112 -v "$VERSION" -f "$BIN_FILE_UNIX" -t "$SIGN_FILE_UNIX" "$SFB_FILE_UNIX" -o "$OFFSET" >> "$PROJECT_DIR_ABS"/output.txt
     ret=$?
     if [ $ret -eq 0 ]; then
       verbose_msg $LINENO "3. Creating header binary..."
-      command="\"$PREPARE_IMAGE_CMD\" \"$PREPARE_IMAGE_SCRIPT\" header -m \"$MAGIC\" -s \"$SIGN_KEY_UNIX\" -r 112 -v \"$VERSION\" -f \"$BIN_FILE_UNIX\" -t \"$SIGN_FILE_UNIX\" -o \"$OFFSET\" \"$HEADER_BIN_UNIX\""
+      command="$PREPARE_IMAGE_CMD $PREPARE_IMAGE_SCRIPT header -m \"$MAGIC\" -s \"$SIGN_KEY_UNIX\" -r 112 -v \"$VERSION\" -f \"$BIN_FILE_UNIX\" -t \"$SIGN_FILE_UNIX\" -o \"$OFFSET\" \"$HEADER_BIN_UNIX\""
       log_msg $LINENO "EXECUTING: $command"
-      "$PREPARE_IMAGE_CMD" "$PREPARE_IMAGE_SCRIPT" header -m "$MAGIC" -s "$SIGN_KEY_UNIX" -r 112 -v "$VERSION" -f "$BIN_FILE_UNIX" -t "$SIGN_FILE_UNIX" -o "$OFFSET" "$HEADER_BIN_UNIX" >> "$PROJECT_DIR_ABS"/output.txt
+      $PREPARE_IMAGE_CMD $PREPARE_IMAGE_SCRIPT header -m "$MAGIC" -s "$SIGN_KEY_UNIX" -r 112 -v "$VERSION" -f "$BIN_FILE_UNIX" -t "$SIGN_FILE_UNIX" -o "$OFFSET" "$HEADER_BIN_UNIX" >> "$PROJECT_DIR_ABS"/output.txt
       ret=$?
       if [ $ret -eq 0 ]; then
         verbose_msg $LINENO "4. Merging to create big binary..."
-        command="\"$PREPARE_IMAGE_CMD\" \"$PREPARE_IMAGE_SCRIPT\" merge -v 0 -e 1 -i \"$HEADER_BIN_UNIX\" -s \"$SBSFU_ELF_UNIX\" -u \"$ELF_FILE\" \"$BIGBINARY_UNIX\""
+        command="$PREPARE_IMAGE_CMD $PREPARE_IMAGE_SCRIPT merge -v 0 -e 1 -i \"$HEADER_BIN_UNIX\" -s \"$SBSFU_ELF_UNIX\" -u \"$ELF_FILE\" \"$BIGBINARY_UNIX\""
         log_msg $LINENO "EXECUTING: $command"
-        "$PREPARE_IMAGE_CMD" "$PREPARE_IMAGE_SCRIPT" merge -v 0 -e 1 -i "$HEADER_BIN_UNIX" -s "$SBSFU_ELF_UNIX" -u "$ELF_FILE" "$BIGBINARY_UNIX" >> "$PROJECT_DIR_ABS"/output.txt
+        $PREPARE_IMAGE_CMD $PREPARE_IMAGE_SCRIPT merge -v 0 -e 1 -i "$HEADER_BIN_UNIX" -s "$SBSFU_ELF_UNIX" -u "$ELF_FILE" "$BIGBINARY_UNIX" >> "$PROJECT_DIR_ABS"/output.txt
         ret=$?
         if [ $ret -eq 0 ]; then
           verbose_msg $LINENO "Checking for partial image generation..."
           if [ -f "$REF_USER_APP_ABS" ]; then
             verbose_msg $LINENO "Reference user app found. Starting partial image generation."
             PARTIAL_BIN_UNIX=$(echo "$PARTIAL_BIN_ABS" | sed 's/\\/\//g')
+            log_msg $LINENO "UNIX-formatted Partial BIN File: \"$PARTIAL_BIN_UNIX\""
             PARTIAL_OFFSET_UNIX=$(echo "$PARTIAL_OFFSET_ABS" | sed 's/\\/\//g')
+            log_msg $LINENO "UNIX-formatted Partial Offset File: \"$PARTIAL_OFFSET_UNIX\""
             PARTIAL_SIGN_UNIX=$(echo "$PARTIAL_SIGN_ABS" | sed 's/\\/\//g')
+            log_msg $LINENO "UNIX-formatted Partial SIGN File: \"$PARTIAL_SIGN_UNIX\""
             PARTIAL_SFB_UNIX=$(echo "$PARTIAL_SFB_ABS" | sed 's/\\/\//g')
+            log_msg $LINENO "UNIX-formatted Partial SFB File: \"$PARTIAL_SFB_UNIX\""
             REF_USER_APP_UNIX=$(echo "$REF_USER_APP_ABS" | sed 's/\\/\//g')
+            log_msg $LINENO "UNIX-formatted Reference User App File: \"$REF_USER_APP_UNIX\""
 
             verbose_msg $LINENO "5a. Creating diff..."
-            command="\"$PREPARE_IMAGE_CMD\" \"$PREPARE_IMAGE_SCRIPT\" diff -1 \"$REF_USER_APP_UNIX\" -2 \"$BIN_FILE_UNIX\" \"$PARTIAL_BIN_UNIX\" -a \"$ALIGNMENT\" --poffset \"$PARTIAL_OFFSET_UNIX\""
+            command="$PREPARE_IMAGE_CMD $PREPARE_IMAGE_SCRIPT diff -1 \"$REF_USER_APP_UNIX\" -2 \"$BIN_FILE_UNIX\" \"$PARTIAL_BIN_UNIX\" -a \"$ALIGNMENT\" --poffset \"$PARTIAL_OFFSET_UNIX\""
             log_msg $LINENO "EXECUTING: $command"
-            "$PREPARE_IMAGE_CMD" "$PREPARE_IMAGE_SCRIPT" diff -1 "$REF_USER_APP_UNIX" -2 "$BIN_FILE_UNIX" "$PARTIAL_BIN_UNIX" -a "$ALIGNMENT" --poffset "$PARTIAL_OFFSET_UNIX" >> "$PROJECT_DIR_ABS"/output.txt
+            $PREPARE_IMAGE_CMD $PREPARE_IMAGE_SCRIPT diff -1 "$REF_USER_APP_UNIX" -2 "$BIN_FILE_UNIX" "$PARTIAL_BIN_UNIX" -a "$ALIGNMENT" --poffset "$PARTIAL_OFFSET_UNIX" >> "$PROJECT_DIR_ABS"/output.txt
             ret=$?
             if [ $ret -eq 0 ]; then
               verbose_msg $LINENO "5b. Signing partial binary..."
-              command="\"$PREPARE_IMAGE_CMD\" \"$PREPARE_IMAGE_SCRIPT\" sign -k \"$SIGN_KEY_UNIX\" \"$PARTIAL_BIN_UNIX\" \"$PARTIAL_SIGN_UNIX\""
+              command="$PREPARE_IMAGE_CMD $PREPARE_IMAGE_SCRIPT sign -k \"$SIGN_KEY_UNIX\" \"$PARTIAL_BIN_UNIX\" \"$PARTIAL_SIGN_UNIX\""
               log_msg $LINENO "EXECUTING: $command"
-              "$PREPARE_IMAGE_CMD" "$PREPARE_IMAGE_SCRIPT" sign -k "$SIGN_KEY_UNIX" "$PARTIAL_BIN_UNIX" "$PARTIAL_SIGN_UNIX" >> "$PROJECT_DIR_ABS"/output.txt
+              $PREPARE_IMAGE_CMD $PREPARE_IMAGE_SCRIPT sign -k "$SIGN_KEY_UNIX" "$PARTIAL_BIN_UNIX" "$PARTIAL_SIGN_UNIX" >> "$PROJECT_DIR_ABS"/output.txt
               ret=$?
               if [ $ret -eq 0 ]; then
                 verbose_msg $LINENO "5c. Packing partial SFB..."
-                command="\"$PREPARE_IMAGE_CMD\" \"$PREPARE_IMAGE_SCRIPT\" pack -m \"$MAGIC\" -s \"$SIGN_KEY_UNIX\" -r 112 -v \"$VERSION\" -f \"$BIN_FILE_UNIX\" -t \"$SIGN_FILE_UNIX\" -o \"$OFFSET\" --pfw \"$PARTIAL_BIN_UNIX\" --ptag \"$PARTIAL_SIGN_UNIX\" --poffset \"$PARTIAL_OFFSET_UNIX\" \"$PARTIAL_SFB_UNIX\""
+                command="$PREPARE_IMAGE_CMD $PREPARE_IMAGE_SCRIPT pack -m \"$MAGIC\" -s \"$SIGN_KEY_UNIX\" -r 112 -v \"$VERSION\" -f \"$BIN_FILE_UNIX\" -t \"$SIGN_FILE_UNIX\" -o \"$OFFSET\" --pfw \"$PARTIAL_BIN_UNIX\" --ptag \"$PARTIAL_SIGN_UNIX\" --poffset \"$PARTIAL_OFFSET_UNIX\" \"$PARTIAL_SFB_UNIX\""
                 log_msg $LINENO "EXECUTING: $command"
-                "$PREPARE_IMAGE_CMD" "$PREPARE_IMAGE_SCRIPT" pack -m "$MAGIC" -s "$SIGN_KEY_UNIX" -r 112 -v "$VERSION" -f "$BIN_FILE_UNIX" -t "$SIGN_FILE_UNIX" -o "$OFFSET" --pfw "$PARTIAL_BIN_UNIX" --ptag "$PARTIAL_SIGN_UNIX" --poffset "$PARTIAL_OFFSET_UNIX" "$PARTIAL_SFB_UNIX" >> "$PROJECT_DIR_ABS"/output.txt
+                $PREPARE_IMAGE_CMD $PREPARE_IMAGE_SCRIPT pack -m "$MAGIC" -s "$SIGN_KEY_UNIX" -r 112 -v "$VERSION" -f "$BIN_FILE_UNIX" -t "$SIGN_FILE_UNIX" -o "$OFFSET" --pfw "$PARTIAL_BIN_UNIX" --ptag "$PARTIAL_SIGN_UNIX" --poffset "$PARTIAL_OFFSET_UNIX" "$PARTIAL_SFB_UNIX" >> "$PROJECT_DIR_ABS"/output.txt
                 ret=$?
               fi
             fi
